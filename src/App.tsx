@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, BookOpen, Heart, Award, Briefcase, HeartPulse, Stethoscope, ShieldPlus, Activity, Pill, Microscope, ClipboardPlus, Mail, MapPin, Phone, BadgeCheck, HeartHandshake, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, BookOpen, Heart, Award, Briefcase, HeartPulse, Stethoscope, ShieldPlus, Activity, Pill, Microscope, ClipboardPlus, Mail, MapPin, Phone, BadgeCheck, HeartHandshake, ArrowUpRight, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const TiltCard = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => {
   return (
@@ -38,6 +38,7 @@ export default function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [lifelineTaps, setLifelineTaps] = useState(0);
   const [isTapPumping, setIsTapPumping] = useState(false);
+  const [fullscreenAcademicIndex, setFullscreenAcademicIndex] = useState<number | null>(null);
   const tapPumpTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -136,7 +137,12 @@ export default function App() {
   const tapsRemaining = Math.max(0, 3 - lifelineTaps);
   const handleLifelineTap = () => {
     setLifelineTaps((prev) => Math.min(prev + 1, 3));
-    setIsTapPumping(true);
+    setIsTapPumping(false);
+    window.requestAnimationFrame(() => setIsTapPumping(true));
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(35);
+    }
 
     if (tapPumpTimeoutRef.current) {
       window.clearTimeout(tapPumpTimeoutRef.current);
@@ -155,6 +161,19 @@ export default function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (fullscreenAcademicIndex === null) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFullscreenAcademicIndex(null);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fullscreenAcademicIndex]);
 
   return (
     <AnimatePresence mode="wait">
@@ -345,7 +364,7 @@ export default function App() {
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.7 }}
               >
-                <TiltCard className="p-8 md:p-12 relative overflow-hidden">
+                <TiltCard className={`p-8 md:p-12 relative overflow-hidden lifeline-panel ${isTapPumping ? 'is-impact' : ''}`}>
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
                   <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
                     <h2 className="font-display text-3xl md:text-4xl text-white">Lifeline Simulation</h2>
@@ -360,6 +379,8 @@ export default function App() {
                       <div
                         className={`lifeline-heart-wrap ${isPatientAlive ? 'is-alive' : 'is-critical'} ${isTapPumping ? 'is-pump' : ''}`}
                       >
+                        <span className={`lifeline-shockwave ${isTapPumping ? 'is-active' : ''}`} />
+                        <span className={`lifeline-shockwave delay ${isTapPumping ? 'is-active' : ''}`} />
                         <HeartPulse className="w-24 h-24 md:w-28 md:h-28 text-rose-400/90" />
                       </div>
                     </button>
@@ -487,13 +508,22 @@ export default function App() {
                       className="h-full w-full"
                     >
                       <TiltCard className="h-full flex flex-col">
-                        <div className="h-64 md:h-80 shrink-0">
+                        <button
+                          type="button"
+                          className="h-64 md:h-80 shrink-0 w-full cursor-zoom-in"
+                          onClick={() => {
+                            if (academicCards[activeTab].image) {
+                              setFullscreenAcademicIndex(activeTab);
+                            }
+                          }}
+                          aria-label={`Open ${academicCards[activeTab].title} image in fullscreen`}
+                        >
                           <ImageFrame
                             src={academicCards[activeTab].image}
                             alt={`${academicCards[activeTab].title} image`}
                             icon={academicCards[activeTab].icon}
                           />
-                        </div>
+                        </button>
                         <div className="p-8 flex-1 flex flex-col bg-gradient-to-b from-transparent to-black/40">
                           <h3 className="font-display text-2xl md:text-3xl font-medium mb-4 text-teal-100">{academicCards[activeTab].title}</h3>
                           <p className="text-slate-300 text-base md:text-lg font-light leading-relaxed flex-1 italic">
@@ -559,6 +589,51 @@ export default function App() {
               </div>
             </section>
 
+            {/* CONTACT */}
+            <section id="contact" className="py-12">
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.7 }}
+              >
+                <TiltCard className="p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-6 text-teal-300">
+                    <HeartHandshake className="w-5 h-5" />
+                    <h2 className="font-display text-2xl md:text-3xl text-white">Contact</h2>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <a
+                      href="https://www.facebook.com/sophia.e0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center justify-between rounded-xl border border-teal-500/20 bg-white/5 px-4 py-4 hover:bg-teal-500/10 hover:border-teal-400/40 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-xs font-mono tracking-[0.2em] uppercase text-teal-300">Facebook</p>
+                        <p className="text-slate-200">facebook.com/sophia.e0</p>
+                      </div>
+                      <ArrowUpRight className="w-5 h-5 text-teal-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </a>
+
+                    <a
+                      href="https://www.instagram.com/notfiiia"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center justify-between rounded-xl border border-teal-500/20 bg-white/5 px-4 py-4 hover:bg-teal-500/10 hover:border-teal-400/40 transition-colors"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-xs font-mono tracking-[0.2em] uppercase text-teal-300">Instagram</p>
+                        <p className="text-slate-200">instagram.com/notfiiia</p>
+                      </div>
+                      <ArrowUpRight className="w-5 h-5 text-teal-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </a>
+                  </div>
+                </TiltCard>
+              </motion.div>
+            </section>
+
             {/* MINIMAL FOOTER */}
             <footer className="mt-24 py-12 border-t border-teal-500/20 flex flex-col items-center justify-center">
               <Stethoscope className="w-8 h-8 text-teal-500/30 mb-6" />
@@ -570,6 +645,42 @@ export default function App() {
           </div>
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {fullscreenAcademicIndex !== null && academicCards[fullscreenAcademicIndex].image && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-md"
+            onClick={() => setFullscreenAcademicIndex(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 12 }}
+              transition={{ type: "spring", damping: 24, stiffness: 280 }}
+              className="relative w-full max-w-6xl rounded-3xl overflow-hidden border border-teal-500/30 shadow-[0_0_50px_rgba(20,184,166,0.15)]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setFullscreenAcademicIndex(null)}
+                className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-teal-500/20 text-white rounded-full transition-colors border border-white/10"
+                aria-label="Close fullscreen image"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <img
+                src={academicCards[fullscreenAcademicIndex].image}
+                alt={`${academicCards[fullscreenAcademicIndex].title} full image`}
+                className="w-full max-h-[85vh] object-contain bg-[#020617]"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </AnimatePresence>
   );

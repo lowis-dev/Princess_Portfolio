@@ -177,6 +177,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   width: 132px;
   height: 132px;
   border-radius: 9999px;
@@ -201,7 +202,37 @@ body {
 }
 
 .lifeline-heart-wrap.is-pump {
-  animation: pump-on-tap 0.24s ease-out;
+  animation: pump-on-tap 0.28s cubic-bezier(0.2, 0.85, 0.2, 1);
+  box-shadow: 0 0 28px rgba(244, 63, 94, 0.45);
+}
+
+.lifeline-panel {
+  transition: box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.lifeline-panel.is-impact {
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.32), 0 0 36px rgba(244, 63, 94, 0.25);
+}
+
+.lifeline-shockwave {
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 2px solid rgba(251, 113, 133, 0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lifeline-shockwave.delay {
+  border-color: rgba(244, 63, 94, 0.55);
+}
+
+.lifeline-shockwave.is-active {
+  animation: lifeline-wave 0.35s ease-out;
+}
+
+.lifeline-shockwave.delay.is-active {
+  animation-delay: 0.06s;
 }
 
 @keyframes float-heart {
@@ -224,8 +255,11 @@ body {
   0% {
     transform: scale(1);
   }
-  40% {
-    transform: scale(1.12);
+  35% {
+    transform: scale(1.22);
+  }
+  55% {
+    transform: scale(0.93);
   }
   100% {
     transform: scale(1);
@@ -245,5 +279,16 @@ body {
   }
   60% {
     transform: scale(1.08);
+  }
+}
+
+@keyframes lifeline-wave {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
   }
 }
