@@ -40,6 +40,8 @@ export default function App() {
   const [isTapPumping, setIsTapPumping] = useState(false);
   const [fullscreenAcademicIndex, setFullscreenAcademicIndex] = useState<number | null>(null);
   const tapPumpTimeoutRef = useRef<number | null>(null);
+  const secondBeatTimeoutsRef = useRef<number[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     // Simulate loading time
@@ -135,10 +137,77 @@ export default function App() {
 
   const isPatientAlive = lifelineTaps >= 3;
   const tapsRemaining = Math.max(0, 3 - lifelineTaps);
+  const getAudioContext = () => {
+    if (typeof window === 'undefined') return null;
+    if (!audioContextRef.current) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return null;
+      audioContextRef.current = new AudioCtx();
+    }
+    return audioContextRef.current;
+  };
+
+  const playTone = (
+    frequency: number,
+    startAt: number,
+    duration: number,
+    gainValue: number,
+    type: OscillatorType = 'triangle'
+  ) => {
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, startAt);
+
+    gainNode.gain.setValueAtTime(0.0001, startAt);
+    gainNode.gain.exponentialRampToValueAtTime(gainValue, startAt + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.03);
+  };
+
+  const playDoubleHeartbeatTap = () => {
+    const audioContext = getAudioContext();
+    if (!audioContext) return;
+
+    const playBothBeats = () => {
+      const now = audioContext.currentTime;
+      // Beat 1: LUB
+      playTone(155, now, 0.11, 0.95, 'triangle');
+      playTone(230, now, 0.045, 0.5, 'square');
+
+      // Beat 2: DUB (separate timeout so it always plays as a second hit)
+      const timeoutId = window.setTimeout(() => {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const beat2 = ctx.currentTime;
+        playTone(135, beat2, 0.12, 0.95, 'triangle');
+        playTone(205, beat2, 0.05, 0.48, 'square');
+        secondBeatTimeoutsRef.current = secondBeatTimeoutsRef.current.filter((id) => id !== timeoutId);
+      }, 320);
+      secondBeatTimeoutsRef.current.push(timeoutId);
+    };
+
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(playBothBeats).catch(() => {
+        // ignore
+      });
+      return;
+    }
+    playBothBeats();
+  };
+
   const handleLifelineTap = () => {
     setLifelineTaps((prev) => Math.min(prev + 1, 3));
     setIsTapPumping(false);
     window.requestAnimationFrame(() => setIsTapPumping(true));
+    playDoubleHeartbeatTap();
 
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(35);
@@ -159,6 +228,8 @@ export default function App() {
       if (tapPumpTimeoutRef.current) {
         window.clearTimeout(tapPumpTimeoutRef.current);
       }
+      secondBeatTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+      secondBeatTimeoutsRef.current = [];
     };
   }, []);
 
