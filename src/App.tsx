@@ -55,6 +55,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     // Simulate loading time
@@ -62,6 +63,23 @@ export default function App() {
       setIsLoading(false);
     }, 2500);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const updateScrollProgress = () => {
+      const doc = document.documentElement;
+      const maxScroll = doc.scrollHeight - window.innerHeight;
+      const nextProgress = maxScroll <= 0 ? 0 : window.scrollY / maxScroll;
+      setScrollProgress(Math.max(0, Math.min(1, nextProgress)));
+    };
+
+    updateScrollProgress();
+    window.addEventListener('scroll', updateScrollProgress, { passive: true });
+    window.addEventListener('resize', updateScrollProgress);
+    return () => {
+      window.removeEventListener('scroll', updateScrollProgress);
+      window.removeEventListener('resize', updateScrollProgress);
+    };
   }, []);
 
   const academicCards = [
@@ -131,6 +149,8 @@ export default function App() {
     setActiveTab(index);
   };
 
+  const bpm = 72 + Math.round(scrollProgress * 20);
+
   return (
     <AnimatePresence mode="wait">
       {isLoading ? (
@@ -190,6 +210,30 @@ export default function App() {
         >
           {/* Animated Background */}
           <div className="bg-mesh"></div>
+          <div className="ecg-progress-shell">
+            <div className="ecg-progress-track" />
+            <div className="ecg-progress-fill" style={{ width: `${scrollProgress * 100}%` }} />
+            <svg viewBox="0 0 1000 60" className="ecg-progress-line" preserveAspectRatio="none">
+              <polyline
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points="0,30 130,30 150,14 170,46 190,30 460,30 485,4 510,56 540,30 1000,30"
+              />
+            </svg>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="fixed top-6 right-6 z-40 hidden md:flex items-center gap-3 glass-panel rounded-full px-4 py-2 border border-teal-500/25"
+          >
+            <div className="pulse-dot" />
+            <span className="font-mono text-[11px] tracking-[0.18em] uppercase text-teal-300">Heart Rate</span>
+            <span className="font-mono text-sm text-white">{bpm} BPM</span>
+          </motion.div>
           
           {/* Floating Navigation */}
           <motion.nav 
@@ -239,6 +283,7 @@ export default function App() {
                   >
                     <Stethoscope className="w-5 h-5" />
                     <span className="font-mono text-xs tracking-[0.2em] uppercase">Aspiring Healthcare Professional</span>
+                    <span className="pulse-ring" />
                   </motion.div>
                   <motion.h1 
                     initial={{ opacity: 0, x: -50 }}
