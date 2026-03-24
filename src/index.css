@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #020617; /* Deep slate/blue-black */
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for horizontal scrolling tabs */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animated Gradient Mesh Background - Medical Theme (Teal, Cyan, Soft Blue) */
+.bg-mesh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(13, 148, 136, 0.15), transparent 50%), /* Teal */
+    radial-gradient(circle at 85% 30%, rgba(8, 145, 178, 0.15), transparent 50%), /* Cyan */
+    radial-gradient(circle at 50% 80%, rgba(56, 189, 248, 0.12), transparent 50%); /* Light Blue */
+  filter: blur(60px);
+  animation: mesh-movement 20s ease-in-out infinite alternate;
+}
+
+@keyframes mesh-movement {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.1) translate(2%, 2%); }
+  100% { transform: scale(1) translate(-2%, -2%); }
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(20, 184, 166, 0.1); /* Subtle teal border */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.glass-panel-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(20, 184, 166, 0.3); /* Brighter teal on hover */
+  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.15);
+  transform: translateY(-4px);
+}
+
+/* Custom EKG Animation */
+.ekg-line {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: dash 3s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
