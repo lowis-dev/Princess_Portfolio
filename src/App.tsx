@@ -5,31 +5,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import VanillaTilt from 'vanilla-tilt';
 import { Camera, BookOpen, Heart, Award, Briefcase, HeartPulse, Stethoscope, ShieldPlus, Activity, Pill, Microscope, ClipboardPlus, Mail, MapPin, Phone, BadgeCheck, HeartHandshake, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const TiltCard = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => {
-  const tiltRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (tiltRef.current) {
-      VanillaTilt.init(tiltRef.current, {
-        max: 8,
-        speed: 400,
-        glare: true,
-        "max-glare": 0.1,
-        scale: 1.02,
-      });
-    }
-    return () => {
-      if (tiltRef.current && (tiltRef.current as any).vanillaTilt) {
-        (tiltRef.current as any).vanillaTilt.destroy();
-      }
-    };
-  }, []);
-
   return (
-    <div ref={tiltRef} className={`glass-panel glass-panel-hover rounded-2xl overflow-hidden ${className}`}>
+    <div className={`glass-panel glass-panel-hover rounded-2xl overflow-hidden ${className}`}>
       {children}
     </div>
   );
@@ -56,6 +36,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(0);
   const [direction, setDirection] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [lifelineTaps, setLifelineTaps] = useState(0);
+  const [isTapPumping, setIsTapPumping] = useState(false);
+  const tapPumpTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Simulate loading time
@@ -149,7 +132,29 @@ export default function App() {
     setActiveTab(index);
   };
 
+  const isPatientAlive = lifelineTaps >= 3;
+  const tapsRemaining = Math.max(0, 3 - lifelineTaps);
+  const handleLifelineTap = () => {
+    setLifelineTaps((prev) => Math.min(prev + 1, 3));
+    setIsTapPumping(true);
+
+    if (tapPumpTimeoutRef.current) {
+      window.clearTimeout(tapPumpTimeoutRef.current);
+    }
+    tapPumpTimeoutRef.current = window.setTimeout(() => {
+      setIsTapPumping(false);
+      tapPumpTimeoutRef.current = null;
+    }, 240);
+  };
   const bpm = 72 + Math.round(scrollProgress * 20);
+
+  useEffect(() => {
+    return () => {
+      if (tapPumpTimeoutRef.current) {
+        window.clearTimeout(tapPumpTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <AnimatePresence mode="wait">
@@ -256,13 +261,13 @@ export default function App() {
             <section id="about" className="min-h-[90vh] flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 pt-10 relative">
               
               {/* Decorative EKG Line Background */}
-              <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 opacity-10 pointer-events-none flex items-center justify-center">
-                <svg viewBox="0 0 1000 200" className="w-full h-64 text-teal-500">
+              <div className="absolute top-8 md:top-0 left-0 w-full h-full overflow-hidden -z-10 opacity-25 md:opacity-10 pointer-events-none flex items-center justify-center">
+                <svg viewBox="0 0 1000 200" className="w-[180%] md:w-full h-56 md:h-64 text-teal-400">
                   <polyline 
                     className="ekg-line"
                     fill="none" 
                     stroke="currentColor" 
-                    strokeWidth="2" 
+                    strokeWidth="2.5" 
                     points="0,100 200,100 220,50 240,150 260,100 400,100 420,20 440,180 460,100 800,100 820,60 840,140 860,100 1000,100" 
                   />
                 </svg>
@@ -328,6 +333,70 @@ export default function App() {
                 <div className="absolute -inset-4 bg-gradient-to-tr from-teal-500/20 to-cyan-500/20 rounded-3xl blur-2xl -z-10"></div>
                 <TiltCard className="aspect-[4/5] w-full shadow-2xl shadow-teal-900/20 border-teal-500/20">
                   <ImageFrame src="/images/personal_picture.jpg" alt="Princess Sophia portrait" icon={Camera} />
+                </TiltCard>
+              </motion.div>
+            </section>
+
+            {/* MINI INTERACTION: LIFELINE */}
+            <section className="py-20">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.7 }}
+              >
+                <TiltCard className="p-8 md:p-12 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
+                  <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+                    <h2 className="font-display text-3xl md:text-4xl text-white">Lifeline Simulation</h2>
+                    <p className="font-mono text-xs tracking-[0.2em] uppercase text-teal-300">Tap for a lifeline.</p>
+
+                    <button
+                      type="button"
+                      onClick={handleLifelineTap}
+                      className="mx-auto group block"
+                      aria-label="Tap heart for lifeline"
+                    >
+                      <div
+                        className={`lifeline-heart-wrap ${isPatientAlive ? 'is-alive' : 'is-critical'} ${isTapPumping ? 'is-pump' : ''}`}
+                      >
+                        <HeartPulse className="w-24 h-24 md:w-28 md:h-28 text-rose-400/90" />
+                      </div>
+                    </button>
+
+                    {!isPatientAlive ? (
+                      <div className="space-y-2">
+                        <p className="text-slate-300">Patient status: critical. Keep tapping to stabilize rhythm.</p>
+                        <p className="font-mono text-sm text-teal-300">Taps needed: {tapsRemaining}</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-teal-200 font-medium">Patient is alive, thanks to you.</p>
+                        <svg viewBox="0 0 900 120" className="w-full h-20 text-teal-300/90 drop-shadow-[0_0_10px_rgba(45,212,191,0.4)]">
+                          <polyline
+                            className="ekg-line-alive"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            points="0,60 150,60 180,60 200,30 220,95 240,60 360,60 390,60 420,20 450,110 480,60 620,60 650,60 680,35 700,90 720,60 900,60"
+                          />
+                        </svg>
+                        <p className="text-slate-300 leading-relaxed">
+                          Nurses are important because they monitor vital signs, respond fast in critical moments, and provide
+                          skilled care with empathy. In real emergencies, that quick action can protect life and give patients a second chance.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setLifelineTaps(0)}
+                          className="mt-2 px-4 py-2 rounded-full border border-teal-500/40 text-teal-200 hover:bg-teal-500/10 transition-colors text-sm"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </TiltCard>
               </motion.div>
             </section>
